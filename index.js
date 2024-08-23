@@ -5,7 +5,6 @@ import chalk from "chalk"
 import inquirer from "inquirer"
 import { getLatestVersion } from './api/api.js'
 
-const log= console.log
 
 const questions=[
     {
@@ -35,7 +34,7 @@ const questions=[
 ]
 
 
-const ErrorMiddleware = `import {envMode} from ../app.js 
+const ErrorMiddleware = `import {envMode} from '../app.js'
 
 export const errorMiddleware = (err, req, res , next)=>{
 
@@ -47,7 +46,7 @@ export const errorMiddleware = (err, req, res , next)=>{
     message:err.message,
     }
     
-    if(envMode==="DEVELOPMENT){
+    if(envMode==="DEVELOPMENT"){
     response.error= err
     }
 
@@ -55,7 +54,7 @@ export const errorMiddleware = (err, req, res , next)=>{
 
     }
 
-    export const TryCatch = (passedFuc)=> async(req,res,next){
+    export const TryCatch = (passedFunc)=> async(req,res,next)=>{
     try{
     await passedFunc(req, res, next)
     }
@@ -68,7 +67,7 @@ export const errorMiddleware = (err, req, res , next)=>{
 
 const ErrorHandler= `export default class ErrorHandler extends Error{
 constructor(message , statusCode){
-super(this.message)
+super(message)
 this.statusCode = statusCode
 }
 }
@@ -80,7 +79,8 @@ async function createApp(){
       const answer  = await inquirer.prompt(questions)
   
       const projectName = answer.name
-      const dir = `/${projectName}`
+     const dir = `${process.cwd()}/${projectName}`;
+
       const fileExtension = "js"
   
       if(!fs.existsSync(dir)){
@@ -90,15 +90,14 @@ async function createApp(){
           fs.mkdirSync(`${dir}/controllers`)
           fs.mkdirSync(`${dir}/middlewares`)
           fs.mkdirSync(`${dir}/utils`)
-          fs.mkdirSync(`${dir}/utils`)
           fs.mkdirSync(`${dir}/lib`)
       }
       if(answer.useErrorHandler){
-          fs.writeFileSync(`${dir}/middleware/error.js` , ErrorMiddleware)
+          fs.writeFileSync(`${dir}/middlewares/error.js` , ErrorMiddleware)
           fs.writeFileSync(`${dir}/utils/errorHandler.js` , ErrorHandler)
       }
   
-      const importLines=['import express from "express']
+      const importLines=['import express from "express"']
       const middlewareLines =[
           `app.use(express.json())`,
           `app.use(express.urlencoded({extended:true}))`
@@ -107,17 +106,17 @@ async function createApp(){
       if(answer.useCors){
           importLines.push(`import cors from "cors"`)
           middlewareLines.push(`app.use(cors({
-              origin:*,
+              origin:"*',
               credentials:true
       }))`)   
       }
       if(answer.useErrorHandler){
-          importLines.push(`import {ErrorHandler} from './middleware/error.js'`)
+          importLines.push(`import {errorMiddleware} from './middleware/error.js'`)
       }
       if(answer.useEnvFile){
           importLines.push(`import dotenv from 'dotenv`)
           const envFileContent = `PORT=4000`
-        fs.writeFileSync(`${projectDir}/.env`, envFileContent)
+        fs.writeFileSync(`${dir}/.env`, envFileContent)
       }
       const baseFileContent = `${importLines.join("\n")}
         ${answer.useEnvFile ? "dotenv.config({path: './.env',})" : ""}
@@ -149,7 +148,7 @@ async function createApp(){
     
     
     app.listen(port, () => console.log('Server is working on Port:'+port+' in '+envMode+' Mode.'))`
-    fs.writeFileSync(`${projectDir}/app.${fileExtension}`, baseFileContent)
+    fs.writeFileSync(`${dir}/app.${fileExtension}`, baseFileContent)
   
     const dependenciesPromise = [getLatestVersion("express")]
   
@@ -198,15 +197,13 @@ async function createApp(){
      }, 
         "devDependencies": {
           ${
-            answer.framework === "TypeScript"
-              ? devDependencies.join(",")
-              : devDependencies[0]
+           devDependencies[0]
           }
         }
       
       }`;
   
-    fs.writeFileSync(`${projectDir}/package.json`, packageJsonContent);
+    fs.writeFileSync(`${dir}/package.json`, packageJsonContent);
     console.log("\n");
     console.log(
       chalk.bgWhite(
