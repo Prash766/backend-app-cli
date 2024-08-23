@@ -6,31 +6,31 @@ import inquirer from "inquirer"
 import { getLatestVersion } from './api/api.js'
 
 
-const questions=[
-    {
-        type:"input",
-        name:"name",
-        message:"Whats your project name?",
-        default:"myapp"
-    },
-    {
-        type:"confirm",
-        name:"useCors",
-        message:"Do you want to enable CORS?",
-        default:false
-    },
-    {
-        type:"confirm",
-        name:"useErrorHandler",
-        message:"Do you want to use a basic Error Handler?",
-        default:false
-    },
-    {
-        type:"confirm",
-        name:"useEnvFile",
-        message:"Do you want to use an environment file?",
-        default:false
-    },
+const questions = [
+  {
+    type: "input",
+    name: "name",
+    message: "Whats your project name?",
+    default: "myapp"
+  },
+  {
+    type: "confirm",
+    name: "useCors",
+    message: "Do you want to enable CORS?",
+    default: false
+  },
+  {
+    type: "confirm",
+    name: "useErrorHandler",
+    message: "Do you want to use a basic Error Handler?",
+    default: false
+  },
+  {
+    type: "confirm",
+    name: "useEnvFile",
+    message: "Do you want to use an environment file?",
+    default: false
+  },
 ]
 
 
@@ -65,7 +65,7 @@ export const errorMiddleware = (err, req, res , next)=>{
     }
 `
 
-const ErrorHandler= `export default class ErrorHandler extends Error{
+const ErrorHandler = `export default class ErrorHandler extends Error{
 constructor(message , statusCode){
 super(message)
 this.statusCode = statusCode
@@ -74,51 +74,51 @@ this.statusCode = statusCode
 `
 
 
-async function createApp(){
+async function createApp() {
   try {
-      const answer  = await inquirer.prompt(questions)
-  
-      const projectName = answer.name
-     const dir = `${process.cwd()}/${projectName}`;
+    const answer = await inquirer.prompt(questions)
 
-      const fileExtension = "js"
-  
-      if(!fs.existsSync(dir)){
-          fs.mkdirSync(dir)
-          fs.mkdirSync(`${dir}/routes`)
-          fs.mkdirSync(`${dir}/models`)
-          fs.mkdirSync(`${dir}/controllers`)
-          fs.mkdirSync(`${dir}/middlewares`)
-          fs.mkdirSync(`${dir}/utils`)
-          fs.mkdirSync(`${dir}/lib`)
-      }
-      if(answer.useErrorHandler){
-          fs.writeFileSync(`${dir}/middlewares/error.js` , ErrorMiddleware)
-          fs.writeFileSync(`${dir}/utils/errorHandler.js` , ErrorHandler)
-      }
-  
-      const importLines=['import express from "express"']
-      const middlewareLines =[
-          `app.use(express.json())`,
-          `app.use(express.urlencoded({extended:true}))`
-      ]
-  
-      if(answer.useCors){
-          importLines.push(`import cors from "cors"`)
-          middlewareLines.push(`app.use(cors({
+    const projectName = answer.name
+    const dir = `${process.cwd()}/${projectName}`;
+
+    const fileExtension = "js"
+
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir)
+      fs.mkdirSync(`${dir}/routes`)
+      fs.mkdirSync(`${dir}/models`)
+      fs.mkdirSync(`${dir}/controllers`)
+      fs.mkdirSync(`${dir}/middlewares`)
+      fs.mkdirSync(`${dir}/utils`)
+      fs.mkdirSync(`${dir}/lib`)
+    }
+    if (answer.useErrorHandler) {
+      fs.writeFileSync(`${dir}/middlewares/error.js`, ErrorMiddleware)
+      fs.writeFileSync(`${dir}/utils/errorHandler.js`, ErrorHandler)
+    }
+
+    const importLines = ['import express from "express"']
+    const middlewareLines = [
+      `app.use(express.json())`,
+      `app.use(express.urlencoded({extended:true}))`
+    ]
+
+    if (answer.useCors) {
+      importLines.push(`import cors from "cors"`)
+      middlewareLines.push(`app.use(cors({
               origin:"*',
               credentials:true
-      }))`)   
-      }
-      if(answer.useErrorHandler){
-          importLines.push(`import {errorMiddleware} from './middleware/error.js'`)
-      }
-      if(answer.useEnvFile){
-          importLines.push(`import dotenv from 'dotenv`)
-          const envFileContent = `PORT=4000`
-        fs.writeFileSync(`${dir}/.env`, envFileContent)
-      }
-      const baseFileContent = `${importLines.join("\n")}
+      }))`)
+    }
+    if (answer.useErrorHandler) {
+      importLines.push(`import {errorMiddleware} from './middleware/error.js'`)
+    }
+    if (answer.useEnvFile) {
+      importLines.push(`import dotenv from 'dotenv`)
+      const envFileContent = `PORT=4000`
+      fs.writeFileSync(`${dir}/.env`, envFileContent)
+    }
+    const baseFileContent = `${importLines.join("\n")}
         ${answer.useEnvFile ? "dotenv.config({path: './.env',})" : ""}
           export const envMode = process.env.NODE_ENV?.trim() || 'DEVELOPMENT'
     const port = process.env.PORT || 3000
@@ -134,7 +134,7 @@ async function createApp(){
       res.send('Hello, World!')
     })
   
-    // your routes here
+    // Define your routes here
   
     
     app.get("*", (req, res) => {
@@ -149,44 +149,43 @@ async function createApp(){
     
     app.listen(port, () => console.log('Server is working on Port:'+port+' in '+envMode+' Mode.'))`
     fs.writeFileSync(`${dir}/app.${fileExtension}`, baseFileContent)
-  
+
     const dependenciesPromise = [getLatestVersion("express")]
-  
+
     if (answer.useCors)
       dependenciesPromise.push(getLatestVersion("cors"))
-  
+
     if (answer.useEnvFile)
       dependenciesPromise.push(getLatestVersion("dotenv"));
-  
+
     const devDependenciesPromise = [
       getLatestVersion("nodemon"),
     ]
-  
-    
+
+
     const dependenciesRaw = await Promise.all(dependenciesPromise);
     const devDependenciesRaw = await Promise.all(devDependenciesPromise);
     const dependencies = dependenciesRaw.map(
       (dependency) => `"${dependency.name}": "${dependency.version}"`
     );
-  
+
     const devDependencies = devDependenciesRaw.map(
       (dependency) => `"${dependency.name}": "${dependency.version}"`
     );
-  
+
     const npmScriptsJs = JSON.stringify({
       start: "set NODE_ENV=PRODUCTION & node app.js",
       dev: "npx nodemon app.js",
     });
-  
-  
+
+
     const packageJsonContent = `{
      "name": "${projectName}",
      "version": "1.0.0",
      "description": "",
-     "main": ${ '"app.js"'},
-     "scripts": ${
-    npmScriptsJs
-     }
+     "main": ${'"app.js"'},
+     "scripts": ${npmScriptsJs
+      }
      ,
      "keywords": [],
      "author": "",
@@ -196,13 +195,12 @@ async function createApp(){
         ${dependencies.join(",")}
      }, 
         "devDependencies": {
-          ${
-           devDependencies[0]
-          }
+          ${devDependencies[0]
+      }
         }
       
       }`;
-  
+
     fs.writeFileSync(`${dir}/package.json`, packageJsonContent);
     console.log("\n");
     console.log(
@@ -217,12 +215,13 @@ async function createApp(){
     console.log(chalk.greenBright(chalk.italic("Start your server: ")));
     console.log(chalk.bold(`1- npm run dev 🚀\n`));
   } catch (error) {
-    console.error(error);    
+    console.error(error);
   }
 
 }
 
 
-createApp().catch((err)=> {
-    console.error(err)}
+createApp().catch((err) => {
+  console.error(err)
+}
 )
