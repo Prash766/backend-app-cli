@@ -10,9 +10,9 @@
   "author": "Prashant",
   "license": "ISC",
   "dependencies": {
+    "@inquirer/prompts": "^7.3.1",
     "axios": "^1.7.4",
-    "chalk": "^5.3.0",
-    "inquirer": "^10.1.8"
+    "chalk": "^5.3.0"
   },
   "bin": {
     "backend-template-cli": "./index.js"

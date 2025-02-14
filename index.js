@@ -14,6 +14,12 @@ const questions = [
     default: "myapp"
   },
   {
+    type:"list",
+    name:"language",
+    message:"What backend template you want Javascript or Typescript?",
+    choices: ['JavaScript', 'TypeScript'],
+  },
+  {
     type: "confirm",
     name: "useCors",
     message: "Do you want to enable CORS?",
@@ -22,7 +28,7 @@ const questions = [
   {
     type: "confirm",
     name: "useErrorHandler",
-    message: "Do you want to use a basic Error Handler?",
+    message: "Do you want to use a Error Handlers?",
     default: false
   },
   {
@@ -34,7 +40,7 @@ const questions = [
 ]
 
 
-const ErrorMiddleware = `import {envMode} from '../app.js'
+const ErrorMiddlewareJS = `import {envMode} from '../app.js'
 
 export const errorMiddleware = (err, req, res , next)=>{
 
@@ -53,22 +59,33 @@ export const errorMiddleware = (err, req, res , next)=>{
     return res.status(err.statusCode).json(response)
 
     }
-
-    export const TryCatch = (passedFunc)=> async(req,res,next)=>{
-    try{
-    await passedFunc(req, res, next)
-    }
-    catch(error){
-    next(error)
-    }
-
-    }
+`
+const asyncHandlerJS = `const asyncHandler = (requestHandler)=>{
+  return (req , res ,next )=> Promise.resolve(requestHandler(req , res , next).catch(err=> next(err)))}
+}
+`
+const asyncHandlerTS = `import {Request , Response , NextFunction} from  'express'
+const asyncHandler = (fn:(req: Request , res : Response , next: NextFunction))=>{
+  return (req , res , next)=> Promise.resolve(fn(req ,res, next)).catch(err=> next(err))
+  }
 `
 
-const ErrorHandler = `export default class ErrorHandler extends Error{
+const ErrorHandlerJS = `export default class ApiError extends Error{
 constructor(message , statusCode){
 super(message)
 this.statusCode = statusCode
+}
+}
+`
+
+const ErrorHandlerTS= `export default const class ApiError extends Error{
+status : number
+constructor(
+message : string,
+status : number
+){
+super(message)
+this.status= status
 }
 }
 `
@@ -81,20 +98,38 @@ async function createApp() {
     const projectName = answer.name
     const dir = `${process.cwd()}/${projectName}`;
 
-    const fileExtension = "js"
+    const fileExtension = answer.language === "Javascript" ? 'js' : 'ts'
 
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir)
-      fs.mkdirSync(`${dir}/routes`)
-      fs.mkdirSync(`${dir}/models`)
-      fs.mkdirSync(`${dir}/controllers`)
-      fs.mkdirSync(`${dir}/middlewares`)
-      fs.mkdirSync(`${dir}/utils`)
-      fs.mkdirSync(`${dir}/lib`)
-    }
-    if (answer.useErrorHandler) {
-      fs.writeFileSync(`${dir}/middlewares/error.js`, ErrorMiddleware)
-      fs.writeFileSync(`${dir}/utils/errorHandler.js`, ErrorHandler)
+    if(fileExtension==='js'){
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir)
+        fs.mkdirSync(`${dir}/routes`)
+        fs.mkdirSync(`${dir}/models`)
+        fs.mkdirSync(`${dir}/controllers`)
+        fs.mkdirSync(`${dir}/middlewares`)
+        fs.mkdirSync(`${dir}/utils`)
+        fs.mkdirSync(`${dir}/lib`)
+      }
+      if (answer.useErrorHandler) {
+        fs.writeFileSync(`${dir}/middlewares/error.js`, ErrorMiddlewareJS)
+        fs.writeFileSync(`${dir}/utils/errorHandler.js`, ErrorHandler)
+        fs.writeFileSync(`${dir}/utils/asyncHandler.js`, asyncHandlerJS)
+      }
+    }else if(fileExtension==="TypeScript"){
+      if(!fs.existsSync(dir)){
+
+        fs.writeFileSync(`${dir}/dist`)
+        fs.writeFileSync(`${dir}/src/middleware`)
+        fs.writeFileSync(`${dir}/src/controllers`)
+        fs.writeFileSync(`${dir}/src/routes`)
+        fs.writeFileSync(`${dir}/src/utils`)
+        fs.writeFileSync(`${dir}/src/lib`)
+        if(answer.useErrorHandler){
+          fs.writeFileSync(`${dir}/utils/asyncHandler.ts`, asyncHandlerTS)
+          fs.writeFileSync(`${dir}/utils/ApiError.ts`, ErrorHandlerTS)
+        }
+      }
+
     }
 
     const importLines = ['import express from "express"']
