@@ -1,6 +1,6 @@
 {
   "name": "backend-template-cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "\"Cli app\"",
   "main": "index.js",
   "type": "module",
@@ -12,6 +12,7 @@
   "dependencies": {
     "@inquirer/prompts": "^7.3.1",
     "axios": "^1.7.4",
+    "backend-template-cli": "^1.0.1",
     "chalk": "^5.3.0"
   },
   "bin": {
