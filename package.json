@@ -15,6 +15,12 @@
     "backend-template-cli": "^1.0.1",
     "chalk": "^5.3.0"
   },
+  "files": [
+    "index.js",
+    "README.md",
+    "lib/",
+    "dist/"
+  ],
   "bin": {
     "backend-template-cli": "./index.js"
   }
